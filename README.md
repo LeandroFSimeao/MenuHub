@@ -5,7 +5,7 @@ Descrição do projeto
 ## Equipe
 
 * Leandro Simeão
-* Matheus Maia
+* Mateus Maia
 
 ## Estrutura de Pastas
 ```
