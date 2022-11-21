@@ -8,7 +8,7 @@ Descrição do projeto
 * Matheus Maia
 
 ## Estrutura de Pastas
-
+```
 |- MenuHub
     |-app.py
     |-static/
@@ -16,3 +16,4 @@ Descrição do projeto
         |-js/
         |-images/
     |-templates/
+```
