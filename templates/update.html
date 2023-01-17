@@ -1,0 +1,30 @@
+{% extends "application.html" %}
+
+{% block html_attribs %} lang="pt-BR" {% endblock %}
+
+{% block title %}Update{% endblock %}
+
+{% block content %}
+<div class="container">
+   <div class="page-header">
+      <h1 class="text-center text-primary">Update Dish</h1>
+   </div>
+
+   <form class="form-inline" action="/update/{{dish.id}}" method="POST">
+      <div class="form-group">
+         <label for="name">Dish</label>
+         <input type="text" class="form-control" name="name" id="name" value="{{dish.name}}">
+         <label for="price">Price:</label>
+         <input type="number" class="form-control" name="price" id="price" value="{{dish.price}}">
+         <label for="category">Choose a category:</label>
+         <select class="dropdown-menu" name="category" id="category">
+                <option class="dropdown-item" value="entrada">Entrada</option>
+                <option class="dropdown-item" value="principal">Principal</option>
+                <option class="dropdown-item" value="sobremesa">Sobremesa</option>
+         </select>
+         <button type="submit" class="btn btn-primary">Update</button>
+         <a class="btn btn-danger" href="/">Cancel</a>
+      </div>
+   </form>
+</div>
+{% endblock %}

@@ -5,20 +5,55 @@
 {% block title %}Index{% endblock %}
 
 {% block content %}
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>id</th>
-            <th>Descripstion</th>
-            <th>Create at</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td class="align-middle">teste</td>
-            <td class="align-middle">teste</td>
-            <td class="align-middle">teste</td>
-        </tr>
-    </tbody>
-</table>
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/styles.css') }}">
+
+
+<div class="container">
+   <div class="page-header">
+      <h1 class="text-center text-primary">MenuHub</h1>
+   </div>
+   
+   <form class="form-inline" action="/" method="POST">
+      <div class="form-group">
+         <label for="name">Name:</label>
+         <input type="text" class="form-control" name="name" id="name">
+         <label for="price">Price:</label>
+         <input type="number" class="form-control" name="price" id="price">
+         <label for="category">Choose a category:</label>
+         <select name="category" class="form-select" id="category">
+                <option value="entrada">Entrada</option>
+                <option value="principal">Principal</option>
+                <option value="sobremesa">Sobremesa</option>
+         </select>
+         <button type="submit" class="btn btn-primary">Add</button>
+      </div>
+   </form>
+   
+   {% if tasks|length < 1 %} <h4 class="text-center text-warning">There are no dishes. Create one below!</h4>
+      {% else %}
+      <table class="table table-striped">
+         <thead>
+            <tr>
+               <th>Name</th>
+               <th>Category</th>
+               <th>Price</th>
+               <th>Actions</th>
+            </tr>
+         </thead>
+         <tbody>
+            {% for dish in dishes %}
+            <tr>
+               <td class="align-middle">{{ dish.name }}</td>
+               <td class="align-middle">{{ dish.Category }}</td>
+               <td class="align-middle">{{ dish.price }}</td>
+               <td class="align-middle actions">
+                  <a class="btn btn-success" href="{{ url_for('update', id=task.id) }}">Update</a> |
+                  <a class="btn btn-danger" href="{{ url_for('delete', id=task.id) }}">Delete</a>
+               </td>
+            </tr>
+            {% endfor %}
+         </tbody>
+      </table>
+      {% endif %}
+</div>
 {% endblock %}
