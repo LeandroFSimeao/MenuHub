@@ -1,6 +1,6 @@
 {% extends "application.html" %}
 
-{% block html_attribs %} lang="pt-BR" {% endblock %}
+{% block html_attribs %} lang pt_BR="BR"{% endblock %}
 
 {% block title %}Index{% endblock %}
 
@@ -12,7 +12,7 @@
    <div class="page-header">
       <h1 class="text-center text-primary">MenuHub</h1>
    </div>
-   
+
    <form class="form-inline" action="/" method="POST">
       <div class="form-group">
          <label for="name">Name:</label>
@@ -21,14 +21,14 @@
          <input type="number" class="form-control" name="price" id="price">
          <label for="category">Choose a category:</label>
          <select name="category" class="form-select" id="category">
-                <option value="entrada">Entrada</option>
-                <option value="principal">Principal</option>
-                <option value="sobremesa">Sobremesa</option>
+            <option value="entrada">Entrada</option>
+            <option value="principal">Principal</option>
+            <option value="sobremesa">Sobremesa</option>
          </select>
          <button type="submit" class="btn btn-primary">Add</button>
       </div>
    </form>
-   
+
    {% if tasks|length < 1 %} <h4 class="text-center text-warning">There are no dishes. Create one below!</h4>
       {% else %}
       <table class="table table-striped">

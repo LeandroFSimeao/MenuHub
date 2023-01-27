@@ -1,0 +1,16 @@
+{% extends "application.html" %}
+
+{% block html_attribs %} lang pt_BR="BR"{% endblock %}
+
+{% block title %}Index{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/styles.css') }}">
+
+
+<div class="container">
+    <div class="page-header">
+        <h1 class="text-center text-primary">MenuHub</h1>
+    </div>
+</div>
+{% endblock %}
