@@ -1,24 +1,29 @@
 # required packages.
 import os
 
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.exc import IntegrityError
+from datetime import timedelta
 
 # application setup.
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Initialize hte Flask object passing the script name with the path
 app = Flask(__name__)
-Bootstrap(app)
+app.secret_key = os.urandom(24)
+app.config['SESSION_TYPE'] = 'filesystem'
 
 app.config[
     "SQLALCHEMY_DATABASE_URI"
 ] = f"sqlite:///{os.path.join(basedir, 'menuhub.sqlite')}"
 app.config["SQLALCHEMY_TRACK_MODIFICATION"] = False
+
+Bootstrap(app)
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -30,7 +35,7 @@ login.init_app(app)
 # class models
 
 
-class User:
+class UserAuth:
     def __init__(self, id):
         self.id = id
         self.name = "user" + str(id)
@@ -74,8 +79,8 @@ class User(db.Model):
 class Restaurant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
-    restaurantId = db.relationship(
-        'Restaurant', backref='Dish owner', lazy=True)
+    dishes = db.relationship(
+        'Dish', backref='Dish owner', lazy=True)
 
     def __repr__(self):
         return f'<Restaurant {self.name}>'
@@ -95,7 +100,7 @@ class Dish(db.Model):
 
 @login.user_loader
 def load_user(id):
-    return User.query.get(int(id))
+    return UserAuth.query.get(int(id))
 
 # applications routes.
 # Declare the aplication default route
@@ -110,12 +115,15 @@ def index():
 # Login page
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/')
+@app.route('/login')
+@app.route('/', methods=['POST'])
+@app.route('/login', methods=['POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        registered_user = User.get(username)
+        email = request.form['email']
+        password = request.form['userPassword']
+        registered_user = User.get(email)
         if registered_user is None:
             return 'Invalid username'
         if registered_user.password != password:
@@ -126,9 +134,36 @@ def login():
 
 
 @app.route('/register')
+@app.route('/register', methods=['POST'])
 def register():
-    return render_template('register.html')
+    if request.method == "POST":
+        name = request.form['userName']
+        email = request.form['email']
+        password = request.form['userPassword']
+        admin = False
+        if 'isAdmin' in request.form:
+            admin = True
 
+        # Hash the password
+        hashed_password = generate_password_hash(password)
+
+        # Create a new user object
+        new_user = User(name=name, email=email,
+                        password_hash=hashed_password, admin=admin)
+
+        # Add the new user to the database
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            error_message = str(e.orig)
+            flash('danger', error_message)
+            return redirect(url_for('register'))
+
+        flash('success', 'Success! The user was registred.')
+        return redirect(url_for('login'))
+    return render_template('register.html')
 
 # @app.route('/', methods=["POST", "GET"])
 # def index():
@@ -143,13 +178,3 @@ def register():
 #     else:
 #         dishes = Dish.query.order_by(Dish.price).all()
 #         return render_template('index.html', dishes=dishes)
-
-
-@app.route('/user/<name>')
-def user(name):
-    return render_template('user.html', name=name)
-
-
-@app.route('/user/')
-def test():
-    return render_template('user.html')
