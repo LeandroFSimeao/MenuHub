@@ -32,30 +32,6 @@ migrate = Migrate(app, db)
 login = LoginManager()
 login.init_app(app)
 
-# class models
-
-
-class UserAuth:
-    def __init__(self, id):
-        self.id = id
-        self.name = "user" + str(id)
-        self.password = self.name + "_secret"
-
-    def __str__(self):
-        return f'{self.name}'
-
-    def is_authenticated(self):
-        return True
-
-    def is_active(self):
-        return True
-
-    def is_anonymous(self):
-        return False
-
-    def get_id(self):
-        return self.id
-
 # class Dbs models.
 
 
@@ -74,6 +50,18 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def is_authenticated(self):
+        return True
+
+    def is_active(self):
+        return True
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return self.id
 
 
 class Restaurant(db.Model):
@@ -100,7 +88,7 @@ class Dish(db.Model):
 
 @login.user_loader
 def load_user(id):
-    return UserAuth.query.get(int(id))
+    return User.query.get(int(id))
 
 # applications routes.
 # Declare the aplication default route
@@ -123,13 +111,15 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['userPassword']
-        registered_user = User.get(email)
+        registered_user = User.query.filter_by(email=email).first()
         if registered_user is None:
-            return 'Invalid username'
-        if registered_user.password != password:
-            return 'Invalid password'
-        login_user(registered_user)
-        return redirect(url_for('index'))
+            flash('danger', 'Invalid e-mail')
+            return redirect(url_for('login'))
+        if User.check_password(registered_user, password):
+            login_user(registered_user)
+            return redirect(url_for('index'))
+        flash('danger', 'Invalid password')
+        return redirect(url_for('login'))
     return render_template("login.html")
 
 
