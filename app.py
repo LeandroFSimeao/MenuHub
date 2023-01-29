@@ -8,6 +8,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import MetaData
 from datetime import timedelta
 
 # application setup.
@@ -25,7 +26,17 @@ app.config["SQLALCHEMY_TRACK_MODIFICATION"] = False
 
 Bootstrap(app)
 
-db = SQLAlchemy(app)
+convention = {
+    "ix": 'ix_%(column_0_label)s',
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s"
+}
+
+metadata = MetaData(naming_convention=convention)
+
+db = SQLAlchemy(app, metadata=metadata)
 migrate = Migrate(app, db)
 
 # Initialize the login Manager
@@ -38,7 +49,8 @@ login.init_app(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True,
+                      nullable=False, name='email_unique_constraint')
     password_hash = db.Column(db.String(128), nullable=False)
     admin = db.Column(db.Boolean)
 
@@ -66,9 +78,10 @@ class User(db.Model):
 
 class Restaurant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
+    name = db.Column(db.String(120), unique=True, nullable=False,
+                     name='restaurant_name_unique_constraint')
     dishes = db.relationship(
-        'Dish', backref='Dish owner', lazy=True)
+        'Dish', backref='dish_owner', lazy=True)
 
     def __repr__(self):
         return f'<Restaurant {self.name}>'
@@ -83,7 +96,7 @@ class Dish(db.Model):
         'restaurant.id'), nullable=False)
 
     def __repr__(self):
-        return f"Task: #{self.id}, description: {self.description}"
+        return f"Dish: #{self.id}, name: {self.name}"
 
 
 @login.user_loader
@@ -96,9 +109,36 @@ def load_user(id):
 
 @app.route("/index")
 @app.route("/home")
+@app.route('/index', methods=["POST"])
+@app.route('/home', methods=["POST"])
 @login_required
 def index():
-    return render_template("index.html")
+    if request.method == "POST":
+        dish_name = request.form['dish_name']
+        price = request.form['price']
+        category = request.form['category']
+        restaurant_id = request.form['restaurant']
+
+        # Create a new user object
+        new_dish = Dish(name=dish_name, category=category,
+                        price=price, restaurant_id=restaurant_id)
+
+        # Add the new user to the database
+        try:
+            db.session.add(new_dish)
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            error_message = str(e.orig)
+            flash('danger', error_message)
+            return redirect(url_for('index'))
+
+        flash('success', 'Success! The dish was added.')
+        return redirect(url_for('index'))
+    else:
+        dishes = Dish.query.order_by(Dish.price).all()
+        restaurant = Restaurant.query.order_by(Restaurant.name).all()
+        return render_template('index.html', dishes=dishes, restaurants=restaurant)
 
 # Login page
 
@@ -155,16 +195,75 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
-# @app.route('/', methods=["POST", "GET"])
-# def index():
-#     if request.method == "POST":
-#         dish = Dish(request.form["name"])
-#         try:
-#             db.session.add(dish)
-#             db.session.commit()
-#             return redirect('/')
-#         except:
-#             return "Houve um erro, ao inserir o Prato"
-#     else:
-#         dishes = Dish.query.order_by(Dish.price).all()
-#         return render_template('index.html', dishes=dishes)
+
+@app.route('/restaurants')
+@app.route('/restaurants', methods=['POST'])
+@login_required
+def restaurants():
+    if request.method == "POST":
+        name = request.form['restaurantName']
+
+        # Create a new restaurant object
+        new_restaurant = Restaurant(name=name)
+
+        # Add the new restaurant to the database
+        try:
+            db.session.add(new_restaurant)
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            error_message = str(e.orig)
+            flash('danger', error_message)
+            return redirect(url_for('restaurants'))
+
+        flash('success', 'Success! The restaurant was registred.')
+        return redirect(url_for('index'))
+    return render_template('restaurants.html')
+
+
+@app.route('/update_dish/<dish_id>')
+@app.route('/update_dish', methods=['POST'])
+@login_required
+def update_dish(dish_id=None):
+    if request.method == "POST":
+        id = request.form['dish_id']
+        name = request.form['dish_name']
+        price = request.form['price']
+        category = request.form['category']
+
+        dish = Dish.query.get(id)
+        dish.name = name
+        dish.price = price
+        dish.category = category
+
+        # Add the new restaurant to the database
+        try:
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            error_message = str(e.orig)
+            flash('danger', error_message)
+            return render_template('update_dish.html', dish=dish)
+
+        flash('success', 'Success! The dish was updated.')
+        return redirect(url_for('index'))
+    else:
+        dish = Dish.query.filter_by(id=dish_id).first()
+        return render_template('update_dish.html', dish=dish)
+
+
+@app.route('/delete_dish/<dish_id>')
+@login_required
+def delete_dish(dish_id):
+    dish = Dish.query.get(dish_id)
+
+    try:
+        db.session.delete(dish)
+        db.session.commit()
+        flash('success', 'Success! The dish was deleted.')
+    except IntegrityError as e:
+        db.session.rollback()
+        error_message = str(e.orig)
+        flash('danger', error_message)
+
+    return redirect(url_for('index'))

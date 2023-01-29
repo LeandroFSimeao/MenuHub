@@ -7,53 +7,73 @@
 {% block content %}
 <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/styles.css') }}">
 
+{% include 'alert.html' %}
 
 <div class="container">
    <div class="page-header">
       <h1 class="text-center text-primary">MenuHub</h1>
+      <h3 class="text-center text-primary">Home page</h3>
    </div>
-
-   <form class="form-inline" action="/" method="POST">
-      <div class="form-group">
-         <label for="name">Name:</label>
-         <input type="text" class="form-control" name="name" id="name">
-         <label for="price">Price:</label>
-         <input type="number" class="form-control" name="price" id="price">
-         <label for="category">Choose a category:</label>
-         <select name="category" class="form-select" id="category">
-            <option value="entrada">Entrada</option>
-            <option value="principal">Principal</option>
-            <option value="sobremesa">Sobremesa</option>
-         </select>
-         <button type="submit" class="btn btn-primary">Add</button>
-      </div>
-   </form>
-
-   {% if tasks|length < 1 %} <h4 class="text-center text-warning">There are no dishes. Create one below!</h4>
+   {% if restaurants|length < 1 %} <h4 class="text-center text-warning">There are no restaurants. Register one first!
+      </h4>
       {% else %}
-      <table class="table table-striped">
-         <thead>
-            <tr>
-               <th>Name</th>
-               <th>Category</th>
-               <th>Price</th>
-               <th>Actions</th>
-            </tr>
-         </thead>
-         <tbody>
-            {% for dish in dishes %}
-            <tr>
-               <td class="align-middle">{{ dish.name }}</td>
-               <td class="align-middle">{{ dish.Category }}</td>
-               <td class="align-middle">{{ dish.price }}</td>
-               <td class="align-middle actions">
-                  <a class="btn btn-success" href="{{ url_for('update', id=task.id) }}">Update</a> |
-                  <a class="btn btn-danger" href="{{ url_for('delete', id=task.id) }}">Delete</a>
-               </td>
-            </tr>
-            {% endfor %}
-         </tbody>
-      </table>
-      {% endif %}
+      <form class="form-inline" action="/home" method="POST">
+         <div class="form-group">
+            <label for="dish_name">Name:</label>
+            <input type="text" class="form-control" name="dish_name" id="dish_name">
+            <label for="price">Price:</label>
+            <input type="number" class="form-control" name="price" id="price">
+            <label for="category">Choose a category:</label>
+            <select name="category" class="form-select" id="category">
+               <option value="entrada">Entrada</option>
+               <option value="principal">Principal</option>
+               <option value="sobremesa">Sobremesa</option>
+            </select>
+            <label for="restaurant">Restaurant:</label>
+            <select name="restaurant" class="form-select" id="restaurant">
+               {% for restaurant in restaurants %}
+               <option value="{{ restaurant.id }}">{{ restaurant.name }}</option>
+               {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Add</button>
+         </div>
+      </form>
+
+      {% if dishes|length < 1 %} <h4 class="text-center text-warning">There are no dishes. Create one above!</h4>
+         {% else %}
+         <table class="table table-striped">
+            <thead>
+               <tr>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Actions</th>
+               </tr>
+            </thead>
+            <tbody>
+               {% for dish in dishes %}
+               <tr>
+                  <td class="align-middle">{{ dish.name }}</td>
+                  <td class="align-middle">{{ dish.category }}</td>
+                  <td class="align-middle">{{ dish.price }}</td>
+                  <td class="align-middle actions">
+                     <a class="btn btn-success" href="{{ url_for('update_dish', dish_id=dish.id) }}">Update</a> |
+                     <a class="btn btn-danger" href="{{ url_for('delete_dish', dish_id=dish.id) }}">Delete</a>
+                  </td>
+               </tr>
+               {% endfor %}
+            </tbody>
+         </table>
+         {% endif %}
+         {% endif %}
+         <footer style="text-align: center;">
+            <button type="button" class="btn btn-primary" onclick="redirect()">Add new restaurant</button>
+         </footer>
 </div>
+
+<script>
+   function redirect() {
+      window.location.href = "{{url_for('restaurants')}}";
+   }
+</script>
 {% endblock %}
